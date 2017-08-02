@@ -1,9 +1,12 @@
 from __future__ import absolute_import
 from skimage import io
+from skimage import measure
 import glob
 import os
 import random
 import utils.label_transform
+from scipy.ndimage.filters import maximum_filter
+import numpy as np
 
 
 class Dataset(object):
@@ -47,6 +50,10 @@ class Dataset(object):
             img = io.imread(self.train_addr[idx]['img_addr'])
             label = io.imread(self.train_addr[idx]['label_addr'])
             if self.is_cityscape:
+                img = measure.block_reduce(img, (2,2,1), func=np.max)
+                # img = maximum_filter(img, (512, 1024, 3))
+                # label = maximum_filter(label, (512, 1024))
+                label = measure.block_reduce(label, (2,2), func=np.max)
                 label = self.label_trans.img_label_trans(label)
             idx += 1
             yield (img, label)
@@ -61,12 +68,40 @@ class Dataset(object):
             img = io.imread(self.val_addr[idx]['img_addr'])
             label = io.imread(self.val_addr[idx]['label_addr'])
             if self.is_cityscape:
+                img = measure.block_reduce(img, (2, 2, 1), func=np.max)
+                # img = maximum_filter(img, (512, 1024, 3))
+                # label = maximum_filter(label, (512, 1024))
+                label = measure.block_reduce(label, (2, 2), func=np.max)
                 label = self.label_trans.img_label_trans(label)
             idx += 1
             yield (img, label)
+
+    @staticmethod
+    def batched_gen(gen, batch_size=32, flatten=True):
+        imgs = []
+        labels = []
+        for img, label in gen:
+            imgs.append(img)
+            labels.append(label)
+            if len(imgs) == batch_size:
+                if flatten:
+                    data_shape = labels[0].shape[0] * labels[0].shape[1]
+                    nc = labels[0].shape[2]
+                    labels = np.concatenate(labels, axis=0)
+                    #labels = np.reshape(labels, (batch_size, data_shape, nc))
+                    labels = np.reshape(labels, (batch_size, data_shape, nc))
+                imgs = np.array(imgs)
+                labels = np.array(labels)
+                yield (imgs, labels)
+                imgs = []
+                labels = []
 
 
 if __name__ == '__main__':
     data = Dataset('./data/cityscape/img/train', './data/cityscape/label/train', is_cityscape=True)
     d = data.train_generator()
-    print(next(d))
+    d2 = Dataset.batched_gen(d, 4)
+    for i in range(10):
+        next(d2)
+        print('any key to next')
+        input()

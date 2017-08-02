@@ -1,5 +1,5 @@
 import pickle
-
+import numpy as np
 
 class cityscape2mine(object):
     def __init__(self):
@@ -96,9 +96,17 @@ class cityscape2mine(object):
     def id2mine(self, idx):
         return self.dictionary[self.id2trainid_dict[idx]]
 
-    def img_label_trans(self, img):
+    def img_label_trans(self, img, dimension=5):
         # img should be a 2d array.
+        w, h = img.shape
+        arr = np.zeros((w,h,dimension))
         for row_idx, row in enumerate(img, 0):
             for ele_idx, ele in enumerate(row, 0):
-                img[row_idx, ele_idx] = self.id2mine(img[row_idx, ele_idx])
-        return img
+                arr[row_idx, ele_idx, self.id2mine(int(ele))] = 1
+        return arr
+
+if __name__ == '__main__':
+    test = cityscape2mine()
+    img = np.zeros((10,10))
+    img[3,4] = 1
+    print(test.img_label_trans(img, 5))

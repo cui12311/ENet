@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import keras
 from keras.layers.advanced_activations import PReLU
 from keras.layers.convolutional import Conv2D, ZeroPadding2D
 from keras.layers.core import SpatialDropout2D, Permute
@@ -22,7 +21,7 @@ class ENet(object):
         self.mode = mode
         self.optimizer = optimizer
         self.loss = loss
-        self.build()
+        self.model = self.build()
 
 
     def build(self):
