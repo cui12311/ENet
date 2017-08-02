@@ -36,8 +36,8 @@ def callbacks(log_dir, checkpoint_dir, model_name):
 def train():
     # hard-coded addrs
     # './data/cityscape/img/train', './data/cityscape/label/train'
-    img_dir = './data/cityscapes/img/train'
-    label_dir = './data/cityscapes/labels/train'
+    img_dir = './data/self_labeled/img/train'
+    label_dir = './data/self_labele/labels/train'
     assert K.backend() == 'tensorflow'
     # ss = K.tf.Session(config=K.tf.ConfigProto(gpu_options=K.tf.GPUOptions(allow_grouwth=True)))
     ss = K.tf.Session()
@@ -47,8 +47,7 @@ def train():
     dataset = Dataset(img_dir, label_dir, is_cityscape=True)
 
     model = ENet((256, 512, 3), 5)
-
-    model.model.summary()
+    model.model.load_weights('../checkpoint/weights.pre_train.49-0.27.h5')
 
     train_gen = dataset.train_generator()
     val_gen = dataset.val_generator()
@@ -57,7 +56,7 @@ def train():
                               steps_per_epoch=16,
                               verbose=1,
                               epochs=50,
-                              callbacks=callbacks('./log', './checkpoint', 'pre_train'),
+                              callbacks=callbacks('./log', './checkpoint', 'after_train'),
                               validation_data=dataset.batched_gen(val_gen, 4),
                               initial_epoch=0,
                               validation_steps=1)

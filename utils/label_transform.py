@@ -1,6 +1,37 @@
 import pickle
 import numpy as np
 
+class self_labeled(object):
+    def __init__(self):
+        """
+        trainId  category     prev_id
+        0        object       100
+        1        road         1
+        2        person       150
+        3        sky          200
+        4        unlabeled    0
+        """
+        self.dictionary = {
+            100: 0,
+            1: 1,
+            150: 2,
+            200: 3,
+            0: 4
+        }
+
+    def label_trans(self, idx):
+        return self.dictionary[idx]
+
+    def img_label_trans(self, img):
+        # img should be a 2d array.
+        w, h = img.shape
+        arr = np.zeros((w,h))
+        for row_idx, row in enumerate(img, 0):
+            for ele_idx, ele in enumerate(row, 0):
+                arr[row_idx, ele_idx, self.label_trans(int(ele))] = 1
+        return arr
+
+
 class cityscape2mine(object):
     def __init__(self):
         """

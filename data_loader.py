@@ -5,7 +5,6 @@ import glob
 import os
 import random
 import utils.label_transform
-from scipy.ndimage.filters import maximum_filter
 import numpy as np
 
 
@@ -35,25 +34,26 @@ class Dataset(object):
             imgname_temp = i.split(sep)[-1].split('_')[:3]
             img_name = imgname_temp[0] + '_' + imgname_temp[1] + '_' + imgname_temp[2] + '_leftImg8bit.png'
             res.append({
-                'img_addr':self.data_dir + sep + cityname + sep + img_name,
-                'label_addr':i
+                'img_addr': self.data_dir + sep + cityname + sep + img_name,
+                'label_addr': i
             })
+        print('load {} data'.format(len(res)))
         return res
 
     def train_generator(self):
         # for train and eval
         idx = 0
         while 1:
-            if idx == len(self.train_addr):
+            if idx == len(self.train_addr)-1:
                 random.shuffle(self.train_addr)
                 idx = 0
             img = io.imread(self.train_addr[idx]['img_addr'])
             label = io.imread(self.train_addr[idx]['label_addr'])
             if self.is_cityscape:
-                img = measure.block_reduce(img, (2,2,1), func=np.max)
+                img = measure.block_reduce(img, (4,4,1), func=np.max)
                 # img = maximum_filter(img, (512, 1024, 3))
                 # label = maximum_filter(label, (512, 1024))
-                label = measure.block_reduce(label, (2,2), func=np.max)
+                label = measure.block_reduce(label, (4,4), func=np.max)
                 label = self.label_trans.img_label_trans(label)
             idx += 1
             yield (img, label)
@@ -62,16 +62,16 @@ class Dataset(object):
         # for train only
         idx = 0
         while 1:
-            if idx == len(self.val_addr):
+            if idx == len(self.val_addr) - 1:
                 random.shuffle(self.val_addr)
                 idx = 0
             img = io.imread(self.val_addr[idx]['img_addr'])
             label = io.imread(self.val_addr[idx]['label_addr'])
             if self.is_cityscape:
-                img = measure.block_reduce(img, (2, 2, 1), func=np.max)
+                img = measure.block_reduce(img, (4, 4, 1), func=np.max)
                 # img = maximum_filter(img, (512, 1024, 3))
                 # label = maximum_filter(label, (512, 1024))
-                label = measure.block_reduce(label, (2, 2), func=np.max)
+                label = measure.block_reduce(label, (4, 4), func=np.max)
                 label = self.label_trans.img_label_trans(label)
             idx += 1
             yield (img, label)
@@ -97,8 +97,32 @@ class Dataset(object):
                 labels = []
 
 
+class self_labeled_dataset(Dataset):
+    def __init__(self, data_dir, label_dir, train=True, make_random=True
+                 , val_ratio=0.3):
+        Dataset.__init__(data_dir, label_dir, train=train, make_random=make_random,
+                         val_ratio=val_ratio, is_cityscape=False)
+
+    def build(self):
+        sep = os.path.sep
+        # ---------------   label_dir
+        # ***/label/train/*.png
+        res = []
+        img_addr = glob.glob(self.data_dir + sep + '*.png')
+        for i in img_addr:
+            # 0000200_annotated_image.png
+            imgname_temp = i.split(sep)[-1].split('.')[0]
+            img_name = imgname_temp + '_annotated_image.png'
+            res.append({
+                'img_addr': i,
+                'label_addr': self.label_dir + sep + img_name
+            })
+        print('load {} data'.format(len(res)))
+        return res
+
+
 if __name__ == '__main__':
-    data = Dataset('./data/cityscape/img/train', './data/cityscape/label/train', is_cityscape=True)
+    data = Dataset('./data/cityscapes/img/train', './data/cityscapes/labels/train', is_cityscape=True)
     d = data.train_generator()
     d2 = Dataset.batched_gen(d, 4)
     for i in range(10):
