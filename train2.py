@@ -37,17 +37,17 @@ def train():
     # hard-coded addrs
     # './data/cityscape/img/train', './data/cityscape/label/train'
     img_dir = './data/self_labeled/img/train'
-    label_dir = './data/self_labele/labels/train'
+    label_dir = './data/self_labeled/labels/train'
     assert K.backend() == 'tensorflow'
     # ss = K.tf.Session(config=K.tf.ConfigProto(gpu_options=K.tf.GPUOptions(allow_grouwth=True)))
     ss = K.tf.Session()
     K.set_session(ss)
     ss.run(K.tf.global_variables_initializer())
 
-    dataset = Dataset(img_dir, label_dir, is_cityscape=True)
+    dataset = Self_labeled_dataset(img_dir, label_dir)
 
     model = ENet((256, 512, 3), 5)
-    model.model.load_weights('../checkpoint/weights.pre_train.49-0.27.h5')
+    model.model.load_weights('./checkpoint/weights.pre_train.49-0.27.h5')
 
     train_gen = dataset.train_generator()
     val_gen = dataset.val_generator()

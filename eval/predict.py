@@ -11,6 +11,7 @@ def predict(img_path, weight_path, in_shape=(256, 512, 3), class_num=5, is_citys
     model.model.load_weights(weight_path)
     # model.model.summary()
     img = io.imread(img_path)
+    io.imsave('ori.jpg', img)
     if is_cityscapes:
         img = measure.block_reduce(img, (4,4,1))
     else:
@@ -32,7 +33,7 @@ def vis(flatten, w, h):
 if __name__ == '__main__':
     #img_path = '../data/cityscapes/img/train/darmstadt/darmstadt_000000_000019_leftImg8bit.png'
     img_path = '../data/self_labeled/img/train/0000200.jpg'
-    weight_path = '../checkpoint/weights.pre_train.49-0.27.h5'
+    weight_path = '../checkpoint/pre_train_best.h5'
     res = predict(img_path, weight_path)
     res = vis(res, 256, 512)
-    io.imsave('res2.jpg', res)
+    io.imsave('res.jpg', res)
