@@ -47,15 +47,15 @@ def train():
     dataset = Self_labeled_dataset(img_dir, label_dir)
 
     model = ENet((256, 512, 3), 5)
-    model.model.load_weights('./checkpoint/weights.pre_train.49-0.27.h5')
+    model.model.load_weights('./checkpoint/pre_train_best.h5')
 
     train_gen = dataset.train_generator()
     val_gen = dataset.val_generator()
 
     model.model.fit_generator(generator=dataset.batched_gen(train_gen, 8),
-                              steps_per_epoch=16,
+                              steps_per_epoch=32,
                               verbose=1,
-                              epochs=50,
+                              epochs=150,
                               callbacks=callbacks('./log', './checkpoint', 'after_train'),
                               validation_data=dataset.batched_gen(val_gen, 4),
                               initial_epoch=0,

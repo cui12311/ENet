@@ -10,10 +10,11 @@ from skimage import transform
 
 
 class Dataset(object):
-    def __init__(self, data_dir, label_dir, train=True, make_random=True, val_ratio=0.3, is_cityscape=False):
+    def __init__(self, data_dir, label_dir, train=True, make_random=True, val_ratio=0.3, is_cityscape=False, is_gray=False):
         self.data_dir = data_dir
         self.label_dir = label_dir
         self.is_cityscape = is_cityscape
+        self.is_gray = is_gray
         self.addr = self.build()
         self.label_trans = utils.label_transform.cityscape2mine()
         if make_random:
@@ -48,16 +49,22 @@ class Dataset(object):
             if idx == len(self.train_addr)-1:
                 random.shuffle(self.train_addr)
                 idx = 0
-            img = io.imread(self.train_addr[idx]['img_addr'])
+            img = io.imread(self.train_addr[idx]['img_addr'], as_grey=self.is_gray)
             label = io.imread(self.train_addr[idx]['label_addr'])
             if self.is_cityscape:
-                img = measure.block_reduce(img, (4,4,1), func=np.max)
+                if self.is_gray:
+                    img = measure.block_reduce(img, (4, 4), func=np.max)
+                else:
+                    img = measure.block_reduce(img, (4,4,1), func=np.max)
                 # img = maximum_filter(img, (512, 1024, 3))
                 # label = maximum_filter(label, (512, 1024))
                 label = measure.block_reduce(label, (4,4), func=np.max)
                 label = self.label_trans.img_label_trans(label)
             else:
-                img = measure.block_reduce(img, (2, 2, 1), func=np.max)
+                if self.is_gray:
+                    img = measure.block_reduce(img, (2, 2), func=np.max)
+                else:
+                    img = measure.block_reduce(img, (2, 2, 1), func=np.max)
                 label = measure.block_reduce(label, (2, 2), func=np.max)
                 label = self.label_trans.img_label_trans(label)
 
@@ -71,31 +78,32 @@ class Dataset(object):
             if idx == len(self.val_addr) - 1:
                 random.shuffle(self.val_addr)
                 idx = 0
-            img = io.imread(self.val_addr[idx]['img_addr'])
+            img = io.imread(self.val_addr[idx]['img_addr'], as_grey=self.is_gray)
             label = io.imread(self.val_addr[idx]['label_addr'])
             if self.is_cityscape:
-                img = measure.block_reduce(img, (4, 4, 1), func=np.max)
+                if self.is_gray:
+                    img = measure.block_reduce(img, (4, 4), func=np.max)
+                else:
+                    img = measure.block_reduce(img, (4,4,1), func=np.max)
                 # img = maximum_filter(img, (512, 1024, 3))
                 # label = maximum_filter(label, (512, 1024))
                 label = measure.block_reduce(label, (4, 4), func=np.max)
                 label = self.label_trans.img_label_trans(label)
             else:
-                if self.is_cityscape:
-                    img = measure.block_reduce(img, (4, 4, 1), func=np.max)
-                    # img = maximum_filter(img, (512, 1024, 3))
-                    # label = maximum_filter(label, (512, 1024))
-                    label = measure.block_reduce(label, (4, 4), func=np.max)
-                    label = self.label_trans.img_label_trans(label)
+                if self.is_gray:
+                    img = measure.block_reduce(img, (4, 4), func=np.max)
                 else:
-                    img = measure.block_reduce(img, (2, 2, 1), func=np.max)
-                    label = measure.block_reduce(label, (2, 2), func=np.max)
-                    label = self.label_trans.img_label_trans(label)
+                    img = measure.block_reduce(img, (4,4,1), func=np.max)
+                # img = maximum_filter(img, (512, 1024, 3))
+                # label = maximum_filter(label, (512, 1024))
+                label = measure.block_reduce(label, (4, 4), func=np.max)
+                label = self.label_trans.img_label_trans(label)
             idx += 1
 
             yield (img, label)
 
     @staticmethod
-    def batched_gen(gen, batch_size=32, flatten=True):
+    def batched_gen(gen, batch_size=32, flatten=True, is_gray=False):
         imgs = []
         labels = []
         for img, label in gen:
@@ -109,6 +117,9 @@ class Dataset(object):
                     # labels = np.reshape(labels, (batch_size, data_shape, nc))
                     labels = np.reshape(labels, (batch_size, data_shape, nc))
                 imgs = np.array(imgs)
+                if is_gray:
+                    shape = imgs.shape
+                    imgs = np.reshape(imgs, (shape[0], shape[1], shape[2], 1))
                 labels = np.array(labels)
                 yield (imgs, labels)
                 imgs = []

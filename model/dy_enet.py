@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from keras.layers.advanced_activations import PReLU
-from keras.layers.convolutional import ZeroPadding2D
+from keras.layers.convolutional import Conv2D, ZeroPadding2D
 from keras.layers.core import SpatialDropout2D, Permute
 from keras.layers.core import Activation, Reshape
 from keras.layers.merge import add, concatenate
@@ -15,14 +15,12 @@ from keras.layers.convolutional import Conv2D, Conv2DTranspose, UpSampling2D
 
 class ENet(object):
     def __init__(self, shape, classes, mode='full_native',
-                 optimizer='Adam', loss='categorical_crossentropy',
-                 is_gray=False):
+                 optimizer='Adam', loss='categorical_crossentropy'):
         self.shape = shape
         self.classes = classes
         self.mode = mode
         self.optimizer = optimizer
         self.loss = loss
-        self.is_gray = is_gray
         self.model = self.build()
 
 
@@ -31,7 +29,8 @@ class ENet(object):
         if self.mode == 'full_native':
             front = self.build_en(inputs)
             end = self.build_de(front, self.classes)
-            end = Reshape((self.shape[0] * self.shape[1], self.classes))(end)
+            # to avoid reshape
+            # end = Reshape((self.shape[0] * self.shape[1], self.classes))(end)
             end = Activation('softmax')(end)
 
             model = Model(inputs=inputs, outputs=end)
@@ -41,9 +40,7 @@ class ENet(object):
 
     def initial_block(self, inputs, nb_filters=13, nb_row=3, nb_col=3,
                       strides=(2,2)):
-        if self.is_gray:
-            nb_filters = 15
-        conv = Conv2D(nb_filters, (nb_row, nb_col), padding='same', strides=strides)(inputs)
+        conv = Conv2D(nb_filters,(nb_row, nb_col), padding='same', strides=strides)(inputs)
         max_pool = MaxPooling2D()(inputs)
         merged = concatenate([conv, max_pool], axis=3)
         return merged
@@ -158,4 +155,5 @@ class ENet(object):
         return enet
 
 if __name__ == '__main__':
-    enet = ENet((1024,512,3), 4)
+    enet = ENet((None, None, 3), 4)
+    enet.model.summary()

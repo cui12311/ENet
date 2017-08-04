@@ -5,15 +5,15 @@ class self_labeled(object):
     def __init__(self):
         """
         trainId  category     prev_id
-        0        object       1
-        1        road         100
+        0        object       100
+        1        road         1
         2        person       150
         3        sky          200
         4        unlabeled    0
         """
         self.dictionary = {
-            100: 1,
-            1: 0,
+            100: 0,
+            1: 1,
             150: 2,
             200: 3,
             0: 4

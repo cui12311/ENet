@@ -1,3 +1,4 @@
+# dynamic input sizes
 from __future__ import absolute_import
 
 from keras import backend as K
@@ -36,28 +37,27 @@ def callbacks(log_dir, checkpoint_dir, model_name):
 def train():
     # hard-coded addrs
     # './data/cityscape/img/train', './data/cityscape/label/train'
-    img_dir = './data/cityscapes/img/train'
-    label_dir = './data/cityscapes/labels/train'
+    img_dir = './data/self_labeled/img/train'
+    label_dir = './data/self_labeled/labels/train'
     assert K.backend() == 'tensorflow'
     # ss = K.tf.Session(config=K.tf.ConfigProto(gpu_options=K.tf.GPUOptions(allow_grouwth=True)))
     ss = K.tf.Session()
     K.set_session(ss)
     ss.run(K.tf.global_variables_initializer())
 
-    dataset = Dataset(img_dir, label_dir, is_cityscape=True)
+    dataset = Self_labeled_dataset(img_dir, label_dir)
 
-    model = ENet((256, 512, 3), 5)
-
-    model.model.summary()
+    model = ENet((None, None, 3), 5)
+    model.model.load_weights('./checkpoint/pre_train_best.h5')
 
     train_gen = dataset.train_generator()
     val_gen = dataset.val_generator()
 
     model.model.fit_generator(generator=dataset.batched_gen(train_gen, 8),
-                              steps_per_epoch=64,
+                              steps_per_epoch=32,
                               verbose=1,
                               epochs=150,
-                              callbacks=callbacks('./log', './checkpoint', 'pre_train'),
+                              callbacks=callbacks('./log', './checkpoint', 'after_train'),
                               validation_data=dataset.batched_gen(val_gen, 4),
                               initial_epoch=0,
                               validation_steps=1)
