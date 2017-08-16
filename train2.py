@@ -2,10 +2,11 @@ from __future__ import absolute_import
 
 from keras import backend as K
 from keras.callbacks import TensorBoard, ModelCheckpoint
-
+from utils.data_augmentation import img_aug_gen
 from data_loader import *
 from model.enet import *
 
+# TODO minus global mean
 
 def callbacks(log_dir, checkpoint_dir, model_name):
     """ 
@@ -44,22 +45,25 @@ def train():
     K.set_session(ss)
     ss.run(K.tf.global_variables_initializer())
 
-    dataset = Self_labeled_dataset(img_dir, label_dir)
+    dataset = Self_labeled_dataset(img_dir, label_dir, is_gray=True)
 
-    model = ENet((256, 512, 3), 5)
-    model.model.load_weights('./checkpoint/pre_train_best.h5')
+    model = ENet((256, 512, 1), 5, mode='unpooling', front_trainable=False, is_gray=True)
+    model.model.load_weights('./checkpoint/pre5/pre_train_best.h5')
 
     train_gen = dataset.train_generator()
     val_gen = dataset.val_generator()
 
-    model.model.fit_generator(generator=dataset.batched_gen(train_gen, 8),
+    rand_gen = img_aug_gen(train_gen)
+
+    model.model.fit_generator(generator=dataset.batched_gen(rand_gen, 16, is_gray=True),
                               steps_per_epoch=32,
                               verbose=1,
                               epochs=150,
-                              callbacks=callbacks('./log', './checkpoint', 'after_train'),
-                              validation_data=dataset.batched_gen(val_gen, 4),
+                              callbacks=callbacks('./log/post5aug', './checkpoint/post5aug', 'post5aug'),
+                              validation_data=dataset.batched_gen(val_gen, 8, is_gray=True),
                               initial_epoch=0,
-                              validation_steps=1)
+                              validation_steps=16)
+    model.model.save_weights('final_5class_aug.h5')
 
 if __name__ == '__main__':
     train()

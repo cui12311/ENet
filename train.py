@@ -44,23 +44,25 @@ def train():
     K.set_session(ss)
     ss.run(K.tf.global_variables_initializer())
 
-    dataset = Dataset(img_dir, label_dir, is_cityscape=True)
+    dataset = Dataset(img_dir, label_dir, is_cityscape=True, is_gray=True)
 
-    model = ENet((256, 512, 3), 5)
+    # model = ENet((256, 512, 1), 5, mode='unpooling',is_gray=True)
+    model = ENet((256, 512, 1), 2, mode='unpooling', is_gray=True)
 
     model.model.summary()
 
     train_gen = dataset.train_generator()
     val_gen = dataset.val_generator()
 
-    model.model.fit_generator(generator=dataset.batched_gen(train_gen, 8),
-                              steps_per_epoch=64,
+    model.model.fit_generator(generator=dataset.batched_gen(train_gen, 16, is_gray=True),
+                              # 3000 data
+                              steps_per_epoch=100,
                               verbose=1,
-                              epochs=150,
-                              callbacks=callbacks('./log', './checkpoint', 'pre_train'),
-                              validation_data=dataset.batched_gen(val_gen, 4),
+                              epochs=20,
+                              callbacks=callbacks('./log/pre5/', './checkpoint/pre5/', 'pre_train'),
+                              validation_data=dataset.batched_gen(val_gen, 8, is_gray=True),
                               initial_epoch=0,
-                              validation_steps=1)
+                              validation_steps=8)
 
 if __name__ == '__main__':
     train()

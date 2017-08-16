@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 
 class self_labeled(object):
-    def __init__(self):
+    def __init__(self, binary_dict=False):
         """
         trainId  category     prev_id
         0        object       100
@@ -11,13 +11,24 @@ class self_labeled(object):
         3        sky          200
         4        unlabeled    0
         """
-        self.dictionary = {
-            100: 0,
-            1: 1,
-            150: 2,
-            200: 3,
-            0: 4
-        }
+        if binary_dict:
+            self.dictionary = {
+                100: 0,
+                1: 1,
+                150: 0,
+                200: 0,
+                0: 0
+            }
+        else:
+            self.dictionary = {
+                100: 0,
+                1: 1,
+                150: 2,
+                200: 3,
+                0: 4
+            }
+
+
 
     def label_trans(self, idx):
         return self.dictionary[idx]

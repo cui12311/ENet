@@ -5,6 +5,7 @@ from keras.callbacks import TensorBoard, ModelCheckpoint
 
 from data_loader import *
 from model.enet import *
+from utils.data_augmentation import img_aug_gen
 
 
 def callbacks(log_dir, checkpoint_dir, model_name):
@@ -36,31 +37,35 @@ def callbacks(log_dir, checkpoint_dir, model_name):
 def train():
     # hard-coded addrs
     # './data/cityscape/img/train', './data/cityscape/label/train'
-    img_dir = './data/cityscapes/img/train'
-    label_dir = './data/cityscapes/labels/train'
+    img_dir = './data/self_labeled/img/train'
+    label_dir = './data/self_labeled/labels/train'
     assert K.backend() == 'tensorflow'
     # ss = K.tf.Session(config=K.tf.ConfigProto(gpu_options=K.tf.GPUOptions(allow_grouwth=True)))
     ss = K.tf.Session()
     K.set_session(ss)
     ss.run(K.tf.global_variables_initializer())
 
-    dataset = Dataset(img_dir, label_dir, is_cityscape=True, is_gray=True)
+    dataset = Self_labeled_dataset(img_dir, label_dir, binary_label=True)
 
-    model = ENet((256, 512, 1), 5, is_gray=True)
+    # TODO: is_gray should be True, change before train next
+    model = ENet((256, 512, 1), 2)
 
     model.model.summary()
 
     train_gen = dataset.train_generator()
     val_gen = dataset.val_generator()
 
-    model.model.fit_generator(generator=dataset.batched_gen(train_gen, 8, is_gray=True),
-                              steps_per_epoch=64,
+    rand_gen = img_aug_gen(train_gen)
+
+    model.model.fit_generator(generator=dataset.batched_gen(rand_gen, 16, is_gray=True),
+                              # 3000 data
+                              steps_per_epoch=32,
                               verbose=1,
-                              epochs=50,
-                              callbacks=callbacks('./log', './checkpoint', 'gray_pre'),
+                              epochs=200,
+                              callbacks=callbacks('./log/post2', './checkpoint/post2', 'post2'),
                               validation_data=dataset.batched_gen(val_gen, 4, is_gray=True),
                               initial_epoch=0,
-                              validation_steps=1)
+                              validation_steps=4)
 
 if __name__ == '__main__':
     train()
